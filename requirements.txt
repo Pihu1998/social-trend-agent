@@ -1,0 +1,6 @@
+TikTokApi
+playwright
+instaloader
+google-generativeai
+python-dotenv
+schedule
