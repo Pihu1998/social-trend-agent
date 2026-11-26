@@ -7,17 +7,23 @@ SRC = os.path.join(ROOT, "src")
 if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
-
-def _ensure_chromium():
-    # Streamlit Cloud has no Playwright browser by default; install once per container.
-    marker = os.path.expanduser("~/.cache/ms-playwright/.installed_by_app")
-    if not os.path.exists(marker):
-        subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=False)
-        os.makedirs(os.path.dirname(marker), exist_ok=True)
-        open(marker, "w").close()
+# Streamlit Cloud has no Playwright browser by default. Install it in the
+# background so the UI renders right away; it is ready after about a minute.
+_MARKER = os.path.expanduser("~/.cache/ms-playwright/.installed_by_app")
 
 
-_ensure_chromium()
+def _install_chromium():
+    cmd = [sys.executable, "-m", "playwright", "install", "chromium"]
+    subprocess.run(cmd, check=False)
+    os.makedirs(os.path.dirname(_MARKER), exist_ok=True)
+    open(_MARKER, "w").close()
+
+
+if not os.path.exists(_MARKER) and not os.environ.get("_PW_INSTALL_STARTED"):
+    os.environ["_PW_INSTALL_STARTED"] = "1"
+    import threading
+
+    threading.Thread(target=_install_chromium, daemon=True).start()
 
 import runpy
 
